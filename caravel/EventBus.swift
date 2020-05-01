@@ -7,7 +7,7 @@ import UIKit
  In charge of watching a subscriber / webview-wkwebview pair.
  Deals with any request from the user side, as well as the watched pair, and forward them to the dispatcher.
  */
-open class EventBus: NSObject, IUIWebViewObserver, IWKWebViewObserver {
+open class EventBus: NSObject, IWKWebViewObserver {
 
     /**
      **Draft**
@@ -54,7 +54,6 @@ open class EventBus: NSObject, IUIWebViewObserver, IWKWebViewObserver {
     fileprivate let subscriberLock = NSObject()
 
     fileprivate weak var reference: AnyObject?
-    fileprivate weak var webView: UIWebView?
     fileprivate var wkWebViewPair: WKWebViewPair?
     fileprivate weak var dispatcher: Caravel?
 
@@ -84,13 +83,6 @@ open class EventBus: NSObject, IUIWebViewObserver, IWKWebViewObserver {
         super.init()
     }
 
-    internal convenience init(dispatcher: Caravel, reference: AnyObject, webView: UIWebView) {
-        self.init(dispatcher: dispatcher, reference: reference)
-        self.webView = webView
-
-        UIWebViewDelegateProxyMediator.subscribe(self.webView!, observer: self)
-    }
-
     internal convenience init(dispatcher: Caravel, reference: AnyObject, wkWebViewPair: (Draft, WKWebView)) {
         self.init(dispatcher: dispatcher, reference: reference)
         try! self.wkWebViewPair = WKWebViewPair(draft: wkWebViewPair.0, webView: wkWebViewPair.1)
@@ -106,27 +98,13 @@ open class EventBus: NSObject, IUIWebViewObserver, IWKWebViewObserver {
     }
 
     fileprivate func unsubscribeFromProxy() {
-        if self.isUsingWebView() {
-            if let w = self.webView {
-                UIWebViewDelegateProxyMediator.unsubscribe(w, observer: self)
-            }
-        } else {
-            if let p = self.wkWebViewPair {
-                WKScriptMessageHandlerProxyMediator.unsubscribe(p.draft.wkWebViewConfiguration, observer: self)
-            }
+        if let p = self.wkWebViewPair {
+            WKScriptMessageHandlerProxyMediator.unsubscribe(p.draft.wkWebViewConfiguration, observer: self)
         }
     }
 
     internal func getReference() -> AnyObject? {
         return self.reference
-    }
-
-    internal func isUsingWebView() -> Bool {
-        return self.webView != nil
-    }
-
-    internal func getWebView() -> UIWebView? {
-        return self.webView
     }
 
     internal func getWKWebView() -> WKWebView? {
@@ -147,11 +125,7 @@ open class EventBus: NSObject, IUIWebViewObserver, IWKWebViewObserver {
      */
     internal func forwardToJS(_ toRun: String) {
         main {
-            if self.isUsingWebView() {
-                _ = self.webView?.stringByEvaluatingJavaScript(from: toRun)
-            } else {
-                self.wkWebViewPair?.webView?.evaluateJavaScript(toRun, completionHandler: nil)
-            }
+            self.wkWebViewPair?.webView?.evaluateJavaScript(toRun, completionHandler: nil)
         }
     }
 
@@ -316,7 +290,6 @@ open class EventBus: NSObject, IUIWebViewObserver, IWKWebViewObserver {
 
         self.dispatcher = nil
         self.reference = nil
-        self.webView = nil
         self.wkWebViewPair = nil
     }
 }
