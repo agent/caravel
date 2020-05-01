@@ -53,7 +53,7 @@ open class Caravel {
                 var toRemove: [Int] = []
 
                 for b in self.buses {
-                    if (b.getReference() == nil && b.getWebView() == nil) || (b.getReference() == nil && b.getWKWebView() == nil) {
+                    if (b.getReference() == nil) || (b.getReference() == nil && b.getWKWebView() == nil) {
                         // Watched pair was garbage collected. This bus is not needed anymore
                         toRemove.append(i)
                         b.notifyAboutCleaning()
@@ -74,7 +74,7 @@ open class Caravel {
         // Test first if an existing bus matching provided pair already exists
         objc_sync_enter(busLock)
         for b in self.buses {
-            if !b.isUsingWebView() && b.getReference()?.hash == subscriber.hash && b.getWKWebView()?.hash == wkWebView.hash {
+            if b.getReference()?.hash == subscriber.hash && b.getWKWebView()?.hash == wkWebView.hash {
                 if inBackground {
                     b.whenReady(whenReady)
                 } else {
